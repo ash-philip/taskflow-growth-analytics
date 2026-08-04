@@ -1,0 +1,15 @@
+# Phase 1: synthetic data generation
+numpy
+pandas
+faker
+
+# Later phases (uncomment as we reach them)
+# dbt-core
+# dbt-bigquery
+# google-cloud-bigquery
+# scipy
+# statsmodels
+# scikit-learn
+# lifelines
+# streamlit
+# plotly
