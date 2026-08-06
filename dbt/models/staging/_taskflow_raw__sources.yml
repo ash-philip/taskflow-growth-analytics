@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: taskflow_raw
+    database: taskflow-growth-analytics
+    schema: taskflow_raw
+    tables:
+      - name: accounts
+      - name: activation
+      - name: trials_and_conversion
+      - name: free_account_weekly_usage
+      - name: free_account_late_upgrade
+      - name: subscription_lifecycle
+      - name: subscription_summary

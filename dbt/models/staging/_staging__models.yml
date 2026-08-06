@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_accounts
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null
+      - name: signup_channel
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['organic_search', 'paid_search', 'content', 'referral', 'direct']
+
+  - name: stg_activation
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null
+      - name: activated
+        data_tests:
+          - not_null
+      - name: exp1_eligible
+        data_tests:
+          - not_null
+      - name: exp1_variant
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['control', 'treatment', 'not_eligible']
+
+  - name: stg_trials_and_conversion
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null
+      - name: trial_observed
+        data_tests:
+          - not_null
+      - name: exp2_variant
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['control', 'treatment', 'not_eligible']
+      - name: plan
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['team', 'pro', 'free']
+      - name: billing_cycle
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['monthly', 'annual']

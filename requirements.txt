@@ -4,8 +4,8 @@ pandas
 faker
 
 # Later phases (uncomment as we reach them)
-# dbt-core
-# dbt-bigquery
+dbt-core
+dbt-bigquery
 # google-cloud-bigquery
 # scipy
 # statsmodels
