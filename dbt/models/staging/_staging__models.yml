@@ -55,3 +55,63 @@ models:
           - accepted_values:
               arguments:
                 values: ['monthly', 'annual']
+
+  - name: stg_free_account_weekly_usage
+    columns:
+          - name: account_id
+            data_tests:
+              - not_null
+          - name: week_number_post_trial
+            data_tests:
+              - not_null
+          - name: active
+            data_tests:
+              - not_null
+
+  - name: stg_free_account_late_upgrade
+    columns:
+          - name: account_id
+            data_tests:
+              - unique
+              - not_null
+          - name: crossed_threshold
+            data_tests:
+                  - not_null
+          - name: exp3_nudged
+            data_tests:
+                  - not_null
+          - name: late_upgraded
+            data_tests:
+                  - not_null
+
+  - name: stg_subscription_lifecycle
+    columns:
+          - name: account_id
+            data_tests:
+              - not_null
+          - name: month_number
+            data_tests:
+                  - not_null
+          - name: churned_this_month
+            data_tests:
+                  - not_null
+
+  - name: stg_subscription_summary
+    columns:
+          - name: account_id
+            data_tests:
+              - not_null
+              - unique
+          - name: churned
+            data_tests:
+                  - not_null
+          - name: upgrade_path
+            data_tests:
+                  - accepted_values:
+                      arguments:
+                        values: [ 'trial_conversion', 'late_upgrade' ]
+          - name: plan
+            data_tests:
+                  - accepted_values:
+                      arguments:
+                        values: [ 'pro', 'team']
