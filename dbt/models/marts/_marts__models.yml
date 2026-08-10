@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: funnel_activation
+    description: "One row per account with funnel-stage flags: signed up, activated, converted."
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null
+      - name: did_signup
+        data_tests:
+          - not_null
+
+  - name: funnel_summary
+    description: "Single-row funnel summary: signup/activation/conversion counts and rates."
+    columns:
+      - name: total_signups
+        data_tests:
+            - not_null
+      - name: activation_rate
+        data_tests:
+            - not_null
