@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_account_cohorts
+    description: >
+      One row per Free account, labeled with its cohort (the calendar date of
+      its first observed usage week). Excludes 34 Free accounts that have zero
+      weekly-usage rows because their trial ended too close to the simulation
+      end date to record any activity — retention can't be measured for
+      accounts with no observed weeks.
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null

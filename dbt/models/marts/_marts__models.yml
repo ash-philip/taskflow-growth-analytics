@@ -21,3 +21,19 @@ models:
       - name: activation_rate
         data_tests:
             - not_null
+
+  - name: retention_cohorts
+    description: >
+        Cohort retention triangle. One row per (cohort_month, week_number_post_trial).
+        cohort_size is the fixed denominator: total distinct Free accounts that started
+        in that month. retention_rate = active_accounts / cohort_size. Note: monthly
+        Free-account cohorts are small (often 15-35 accounts), so early-week rates are
+        noisy, and because "active" means >=1 task in a week, rates can recover
+        week-to-week rather than decaying monotonically.
+    columns:
+      - name: retention_rate
+        data_tests:
+            - not_null
+      - name: cohort_size
+        data_tests:
+            - not_null
