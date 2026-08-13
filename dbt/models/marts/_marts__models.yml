@@ -37,3 +37,63 @@ models:
       - name: cohort_size
         data_tests:
             - not_null
+
+  - name: exp_onboarding_assignment
+    description: >
+        Experiment 1 (onboarding redesign) analysis table. One row per eligible
+        account: assigned arm (control/treatment) and activation outcome. Filtered
+        to exp1_eligible accounts only, so 'not_eligible' accounts are excluded.
+    columns:
+      - name: account_id
+        data_tests:
+            - unique
+            - not_null
+      - name: variant
+        data_tests:
+            - accepted_values:
+                arguments:
+                  values: [ control , treatment ]
+
+  - name: exp_discount_assignment
+    description: >
+        Experiment 2 (trial discount framing) analysis table. One row per eligible
+        converted account: arm (control/treatment), whether they chose annual billing
+        (chose_annual), and trial_period_task_count as a pre-experiment covariate for
+        CUPED variance reduction in Phase 4. Filtered to exp2_eligible AND converted.
+    columns:
+      - name: account_id
+        data_tests:
+            - unique
+            - not_null
+      - name: variant
+        data_tests:
+            - accepted_values:
+                arguments:
+                  values: [ control, treatment ]
+      - name: trial_period_task_count
+        data_tests:
+            - not_null
+
+  - name: exp_nudge_assignment
+    description: >
+        Experiment 3 (usage-threshold upgrade nudge) analysis table. One row per
+        Free account: crossed_threshold, exp3_nudged (crossed after nudge launch),
+        and late_upgraded outcome. NOT randomized -- nudge was shown to accounts
+        that self-selected by crossing a usage threshold, so a naive nudged-vs-rest
+        comparison is confounded. Kept unfiltered (all Free accounts) so Phase 5
+        causal-inference methods have proper comparison groups. Requires DiD /
+        propensity matching, not a simple t-test.
+    columns:
+      - name: account_id
+        data_tests:
+            - unique
+            - not_null
+      - name: crossed_threshold
+        data_tests:
+            - not_null
+      - name: exp3_nudged
+        data_tests:
+            - not_null
+      - name: late_upgraded
+        data_tests:
+            - not_null

@@ -78,3 +78,19 @@ Runtime Error
 [0m11:48:21.518859 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a081350>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a0730b0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10a131bf0>]}
 [0m11:48:21.518974 [debug] [MainThread]: Flushing usage events
 [0m11:48:21.977731 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m17:23:38.515004 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10abacc20>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c27e850>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c27ead0>]}
+
+
+============================== 17:23:38.517668 | 0d71e5cd-0b72-4cfe-9830-2b2d4f455194 ==============================
+[0m17:23:38.517668 [info ] [MainThread]: Running with dbt=1.12.0
+[0m17:23:38.517950 [debug] [MainThread]: running dbt with arguments {'log_path': 'logs', 'use_colors': 'True', 'quiet': 'False', 'partial_parse': 'True', 'static_parser': 'True', 'printer_width': '80', 'warn_error': 'None', 'cache_selected_only': 'False', 'fail_fast': 'False', 'introspect': 'True', 'log_format': 'default', 'send_anonymous_usage_stats': 'True', 'indirect_selection': 'eager', 'hints_enabled': 'True', 'target_path': 'None', 'write_json': 'True', 'log_cache_events': 'False', 'profiles_dir': '/Users/ashwinphilip/.dbt', 'maximum_seed_size_mib': '1', 'debug': 'False', 'use_experimental_parser': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'invocation_command': 'dbt run --select exp_onboarding_assignment', 'version_check': 'True', 'empty': 'False', 'no_print': 'None'}
+[0m17:23:38.518230 [error] [MainThread]: [[31mERROR[0m]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/ashwinphilip/Documents/taskflow-growth-analytics/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m17:23:38.519812 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.040821876, "process_in_blocks": "0", "process_kernel_time": 0.111019, "process_mem_max_rss": "129318912", "process_out_blocks": "0", "process_user_time": 0.499162}
+[0m17:23:38.519998 [debug] [MainThread]: Command `dbt run` failed at 17:23:38.519964 after 0.04 seconds
+[0m17:23:38.520114 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c215350>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c20b0b0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10c2c5bf0>]}
+[0m17:23:38.520225 [debug] [MainThread]: Flushing usage events
+[0m17:23:38.905808 [debug] [MainThread]: An error was encountered while trying to flush usage events
