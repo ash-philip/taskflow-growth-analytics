@@ -6,9 +6,13 @@ faker
 # Later phases (uncomment as we reach them)
 dbt-core
 dbt-bigquery
-# google-cloud-bigquery
-# scipy
-# statsmodels
+google-cloud-bigquery
+scipy
+statsmodels
+jupyter
+matplotlib
+google-cloud-bigquery-storage
+db-dtypes
 # scikit-learn
 # lifelines
 # streamlit
