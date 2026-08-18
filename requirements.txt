@@ -13,7 +13,7 @@ jupyter
 matplotlib
 google-cloud-bigquery-storage
 db-dtypes
-# scikit-learn
-# lifelines
+scikit-learn
+lifelines
 # streamlit
 # plotly
