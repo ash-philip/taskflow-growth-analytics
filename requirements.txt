@@ -3,7 +3,7 @@ numpy
 pandas
 faker
 
-# Later phases (uncomment as we reach them)
+
 dbt-core
 dbt-bigquery
 google-cloud-bigquery
@@ -15,5 +15,5 @@ google-cloud-bigquery-storage
 db-dtypes
 scikit-learn
 lifelines
-# streamlit
-# plotly
+streamlit
+plotly
