@@ -1,14 +1,14 @@
 """
-Simulates ongoing weekly usage for accounts that did NOT convert during the
-trial (still on Free), for up to 52 weeks post-trial (right-censored at
-SIM_END). Detects the first week each account crosses the
-EXP3_WEEKLY_TASK_THRESHOLD, and simulates whether/when they later upgrade.
+Simulates ongoing weekly usage for accounts still on Free (didn't convert in
+the trial), up to 52 weeks post-trial, right-censored at SIM_END. Detects the
+first week each account crosses EXP3_WEEKLY_TASK_THRESHOLD and simulates
+whether they later upgrade.
 
-Experiment 3 is NOT randomized: every account that crosses the threshold
-after EXP3_START sees the nudge. The confound is structural, not injected --
-high-propensity accounts are simply more likely to cross the threshold AND
-independently more likely to upgrade regardless of any nudge. That's the
-whole point of this experiment.
+Experiment 3 is not randomized: every account crossing the threshold after
+EXP3_START sees the nudge. The confound is structural, not injected. High-
+propensity accounts are more likely to cross the threshold AND, independently,
+more likely to upgrade regardless of the nudge. That is the point of this
+experiment.
 """
 
 import numpy as np
@@ -21,15 +21,19 @@ rng = np.random.default_rng(cfg.RANDOM_SEED + 3)
 MAX_WEEKS_POST_TRIAL = 52
 
 
-def simulate_free_account_usage(df: pd.DataFrame) -> pd.DataFrame:
-    """Returns a long-format weekly usage table for Free (non-converted) accounts."""
-    free_accounts = df[df["converted"] == False].copy()  # noqa: E712
+def _logistic(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def simulate_free_account_usage(df: pd.DataFrame):
+    """Returns (weekly usage table, free-account table with threshold/nudge flags)."""
+    free_accounts = df[df["converted"] == False].copy()  # noqa: E712 -- explicit False excludes NaN
     free_accounts["trial_end_date"] = pd.to_datetime(free_accounts["trial_end_date"])
 
     rows = []
     for _, acct in free_accounts.iterrows():
         propensity = acct["engagement_propensity"]
-        base_lambda = 0.5 + 12 * propensity  # base weekly task rate, propensity-driven
+        base_lambda = 0.5 + 12 * propensity
         weeks_available = min(
             MAX_WEEKS_POST_TRIAL,
             (cfg.SIM_END - acct["trial_end_date"].date()).days // 7,
@@ -37,32 +41,20 @@ def simulate_free_account_usage(df: pd.DataFrame) -> pd.DataFrame:
         if weeks_available <= 0:
             continue
 
-        threshold_crossed_week = None
         for w in range(weeks_available):
-            # Mild organic growth in usage over time for higher-propensity accounts --
-            # this is what produces realistic, gradual threshold crossings rather than
-            # an implausible jump in week 1.
-            growth_mult = 1 + 0.015 * w * propensity
-            lam = base_lambda * growth_mult
+            # mild usage growth over time so threshold crossings are gradual, not week-1 jumps
+            lam = base_lambda * (1 + 0.015 * w * propensity)
             task_count = rng.poisson(lam)
-
-            week_date = acct["trial_end_date"] + pd.Timedelta(weeks=w)
-            rows.append(
-                {
-                    "account_id": acct["account_id"],
-                    "week_number_post_trial": w,
-                    "week_date": week_date,
-                    "task_count": task_count,
-                    "active": task_count > 0,
-                }
-            )
-
-            if threshold_crossed_week is None and task_count >= cfg.EXP3_WEEKLY_TASK_THRESHOLD:
-                threshold_crossed_week = w
+            rows.append({
+                "account_id": acct["account_id"],
+                "week_number_post_trial": w,
+                "week_date": acct["trial_end_date"] + pd.Timedelta(weeks=w),
+                "task_count": task_count,
+                "active": task_count > 0,
+            })
 
     usage_df = pd.DataFrame(rows)
 
-    # --- Determine threshold crossing + experiment 3 exposure per account ---
     crossings = (
         usage_df[usage_df["task_count"] >= cfg.EXP3_WEEKLY_TASK_THRESHOLD]
         .sort_values("week_date")
@@ -84,22 +76,19 @@ def simulate_free_account_usage(df: pd.DataFrame) -> pd.DataFrame:
 def simulate_late_upgrade(free_accounts: pd.DataFrame) -> pd.DataFrame:
     df = free_accounts.copy()
 
-    # Baseline late-upgrade probability, propensity-driven, higher if the
-    # account crossed the threshold at all (structural confound -- this is
-    # true regardless of whether the nudge existed).
-    base_logit = np.log(0.05 / 0.95)  # ~5% baseline for accounts that never cross
+    # base ~5% for accounts that never cross; crossing alone lifts to ~35%
+    # (the structural confound); the nudge adds EXP3_TRUE_LIFT on top of that
+    base_logit = np.log(0.05 / 0.95)
+    crossed_logit = np.log(0.35 / 0.65)
     propensity_effect = 3.0 * (df["engagement_propensity"] - df["engagement_propensity"].mean())
-    crossed_effect = np.where(df["crossed_threshold"], np.log(0.35 / 0.65) - base_logit, 0.0)  # crossing alone -> ~35%
+    crossed_effect = np.where(df["crossed_threshold"], crossed_logit - base_logit, 0.0)
     nudge_effect = np.where(
         df["exp3_nudged"],
-        np.log((0.35 + cfg.EXP3_TRUE_LIFT) / (1 - 0.35 - cfg.EXP3_TRUE_LIFT)) - np.log(0.35 / 0.65),
+        np.log((0.35 + cfg.EXP3_TRUE_LIFT) / (1 - 0.35 - cfg.EXP3_TRUE_LIFT)) - crossed_logit,
         0.0,
     )
 
-    def logistic(x):
-        return 1 / (1 + np.exp(-x))
-
-    p_late_upgrade = logistic(base_logit + propensity_effect + crossed_effect + nudge_effect)
+    p_late_upgrade = _logistic(base_logit + propensity_effect + crossed_effect + nudge_effect)
     df["p_late_upgrade_true"] = p_late_upgrade.round(4)
     df["late_upgraded"] = rng.binomial(1, p_late_upgrade).astype(bool)
 
@@ -124,8 +113,8 @@ if __name__ == "__main__":
           free_accounts["crossed_threshold"].sum())
     print("Of those, nudged (crossed after EXP3_START):", free_accounts["exp3_nudged"].sum())
 
-    print("\n--- The naive comparison a rushed analyst might make ---")
-    print("Late-upgrade rate, nudged vs never-crossed (WRONG comparison -- confounded):")
+    # naive vs confounder-controlled comparison (the whole point of the experiment)
+    print("\nNaive comparison, nudged vs never-crossed (confounded):")
     naive = free_accounts.groupby(
         np.select(
             [free_accounts["exp3_nudged"], ~free_accounts["crossed_threshold"]],
@@ -135,7 +124,10 @@ if __name__ == "__main__":
     )["late_upgraded"].agg(["mean", "count"])
     print(naive.round(4))
 
-    print("\n--- The correct comparison: nudged vs crossed-but-before-nudge-existed ---")
-    print("(same 'type' of account -- crossed the threshold -- differing only by timing)")
-    correct = free_accounts[free_accounts["crossed_threshold"]].groupby("exp3_nudged")["late_upgraded"].agg(["mean", "count"])
+    print("\nControlled comparison, nudged vs crossed-before-nudge (both crossed the threshold):")
+    correct = (
+        free_accounts[free_accounts["crossed_threshold"]]
+        .groupby("exp3_nudged")["late_upgraded"]
+        .agg(["mean", "count"])
+    )
     print(correct.round(4))

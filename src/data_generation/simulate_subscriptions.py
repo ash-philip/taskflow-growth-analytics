@@ -1,13 +1,12 @@
 """
-Simulates the trial -> paid decision for each account: whether they convert
-at all, which plan/billing cycle they choose, and Experiment 2 (trial
-discount framing), which affects ONLY the annual-vs-monthly choice among
-accounts that do convert.
+Simulates the trial -> paid decision for each account: whether they convert,
+which plan/billing cycle they choose, and Experiment 2 (trial discount framing),
+which affects only the annual-vs-monthly choice among accounts that convert.
 
-Also generates `trial_period_task_count`: a Poisson-distributed proxy for
-engagement during the trial, driven by the hidden engagement_propensity.
-This is the observable covariate CUPED will use in Phase 4 -- a real analyst
-never sees engagement_propensity itself, only behavioral proxies like this.
+Also generates trial_period_task_count: a Poisson proxy for trial engagement,
+driven by the hidden engagement_propensity. This is the observable covariate
+used by CUPED later, since a real analyst never sees engagement_propensity
+directly, only behavioral proxies like this.
 """
 
 import numpy as np
@@ -37,49 +36,40 @@ def simulate_subscriptions(df: pd.DataFrame) -> pd.DataFrame:
     df["trial_end_date"] = pd.to_datetime(df["signup_date"]) + pd.Timedelta(days=cfg.TRIAL_LENGTH_DAYS)
     df["trial_observed"] = df["trial_end_date"] <= pd.Timestamp(cfg.SIM_END)
 
-    # Trial-period engagement proxy (observable covariate for CUPED later).
-    # Lambda scales with hidden propensity -- more engaged accounts create
-    # more tasks during the trial.
-    lam = 2 + 18 * df["engagement_propensity"]  # ranges roughly 2-20 tasks over 14 days
+    # trial-engagement proxy; lambda scales with propensity (~2-20 tasks over 14 days)
+    lam = 2 + 18 * df["engagement_propensity"]
     df["trial_period_task_count"] = rng.poisson(lam)
 
     df = assign_experiment_2(df)
 
-    # --- Conversion decision ---
-    # Activated accounts convert much more than non-activated ones. Both are
-    # further shifted by engagement_propensity.
+    # conversion: activated accounts convert far more; propensity shifts both
     base_convert_logit = np.where(df["activated"], logit(0.55), logit(0.12))
     propensity_effect_convert = 2.0 * (df["engagement_propensity"] - df["engagement_propensity"].mean())
     p_convert = logistic(base_convert_logit + propensity_effect_convert)
     df["p_convert_true"] = p_convert.round(4)
     df["converted"] = np.where(df["trial_observed"], rng.binomial(1, p_convert).astype(bool), np.nan)
 
-    # --- Plan choice (Pro vs Team), conditional on converting ---
-    # Larger companies lean Team.
+    # plan choice (larger companies lean Team), conditional on converting
     team_base_p = df["company_size_bucket"].map({"small": 0.10, "medium": 0.35, "large": 0.65})
     chose_team = rng.binomial(1, team_base_p).astype(bool)
     df["plan"] = np.select(
-        [df["converted"] == True, df["converted"] == False],  # noqa: E712
+        [df["converted"] == True, df["converted"] == False],  # noqa: E712 -- explicit True/False excludes NaN
         [np.where(chose_team, "team", "pro"), "free"],
         default=None,
     )
 
-    # --- Seats, conditional on converting ---
     seat_lambda = df["company_size_bucket"].map({"small": 2.5, "medium": 8, "large": 22})
     df["seats"] = np.where(df["converted"] == True, np.maximum(1, rng.poisson(seat_lambda)), np.nan)  # noqa: E712
 
-    # --- Billing cycle (Experiment 2 lives here), conditional on converting ---
+    # billing cycle is where Experiment 2's effect is applied
     base_annual_logit = logit(cfg.BASE_ANNUAL_SELECT_RATE)
     exp2_effect = np.where(
         (df["converted"] == True) & (df["exp2_variant"] == "treatment"),  # noqa: E712
         logit(cfg.BASE_ANNUAL_SELECT_RATE + cfg.EXP2_LIFT) - logit(cfg.BASE_ANNUAL_SELECT_RATE),
         0.0,
     )
-    # Propensity effect on annual selection -- deliberately strong. This is what
-    # makes trial_period_task_count a genuinely useful CUPED covariate: we need
-    # real correlation between the pre-experiment proxy and the outcome for
-    # variance reduction to do meaningful work in Phase 4 (CUPED's benefit
-    # scales with the SQUARE of this correlation, so it needs to not be weak).
+    # strong propensity effect on purpose: CUPED's benefit scales with the square
+    # of the covariate-outcome correlation, so the proxy needs real signal here
     propensity_effect_annual = 8.0 * (df["engagement_propensity"] - df["engagement_propensity"].mean())
     p_annual = logistic(base_annual_logit + exp2_effect + propensity_effect_annual)
     df["p_annual_true"] = p_annual.round(4)
@@ -89,9 +79,8 @@ def simulate_subscriptions(df: pd.DataFrame) -> pd.DataFrame:
         None,
     )
 
-    # --- MRR ---
     price_per_seat = df["plan"].map(cfg.PLAN_PRICES).fillna(0)
-    annual_discount = np.where(df["billing_cycle"] == "annual", 0.83, 1.0)  # ~2 months free ~ 17% off
+    annual_discount = np.where(df["billing_cycle"] == "annual", 0.83, 1.0)  # annual ~= 2 months free
     df["mrr"] = (price_per_seat * df["seats"].fillna(0) * annual_discount).round(2)
 
     return df
@@ -112,14 +101,13 @@ if __name__ == "__main__":
     print(f"\nConverted accounts: {len(converted)}")
     print("Plan mix:", converted["plan"].value_counts(normalize=True).round(3).to_dict())
 
-    elig2 = converted[converted["exp2_eligible"]]
+    elig2 = converted[converted["exp2_eligible"]].copy()
     print("\nAnnual-selection rate by Experiment 2 arm (converted, eligible only):")
     print(elig2.groupby("exp2_variant")["billing_cycle"].apply(lambda s: (s == "annual").mean()).round(4))
     print("Sample sizes:", elig2["exp2_variant"].value_counts().to_dict())
 
-    print("\nCorrelation check -- trial_period_task_count vs engagement_propensity:")
-    print(round(df["trial_period_task_count"].corr(df["engagement_propensity"]), 3))
-    print("Correlation -- trial_period_task_count vs annual selection (among converted, eligible):")
-    elig2 = elig2.copy()
     elig2["chose_annual"] = (elig2["billing_cycle"] == "annual").astype(int)
-    print(round(elig2["trial_period_task_count"].corr(elig2["chose_annual"]), 3))
+    print("\nCorrelation, trial_period_task_count vs engagement_propensity:",
+          round(df["trial_period_task_count"].corr(df["engagement_propensity"]), 3))
+    print("Correlation, trial_period_task_count vs annual selection (converted, eligible):",
+          round(elig2["trial_period_task_count"].corr(elig2["chose_annual"]), 3))

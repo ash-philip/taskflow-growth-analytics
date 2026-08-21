@@ -7,11 +7,10 @@ eligible as (
         account_id,
         exp2_variant as variant,
         billing_cycle = 'annual' as chose_annual,
-        trial_period_task_count
-
+        trial_period_task_count  -- pre-experiment covariate, used for CUPED variance reduction
     from trials
     where exp2_eligible = true
-      and converted = true-- must have converted to be in the outcome population
+      and converted = true  -- only converted accounts made the annual-vs-monthly choice
 )
 
 select * from eligible

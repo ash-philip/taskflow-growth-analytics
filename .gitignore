@@ -26,3 +26,5 @@ data/raw/*.csv
 data/processed/*.csv
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+.idea/
+docs/Readme_Notes.rtf

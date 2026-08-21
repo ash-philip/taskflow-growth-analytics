@@ -7,7 +7,7 @@ activation as (
 ),
 
 conversion as (
-    select * from {{ ref('stg_trials_and_conversion') }}    -- which staging model has conversion data?
+    select * from {{ ref('stg_trials_and_conversion') }}
 ),
 
 funnel as (
@@ -17,19 +17,13 @@ funnel as (
         a.signup_channel,
         a.company_size_bucket,
 
-        -- everyone in stg_accounts signed up, so this is always true
-        true as did_signup,
-
-        -- from the activation table
+        true as did_signup,  -- every account in stg_accounts has signed up by definition
         act.activated as did_activate,
-
-        -- from the conversion table
         conv.converted as did_convert
 
     from accounts as a
     left join activation as act on a.account_id = act.account_id
-    left join conversion as conv on a.account_id = conv.account_id    -- which alias?
-
+    left join conversion as conv on a.account_id = conv.account_id
 )
 
 select * from funnel

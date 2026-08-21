@@ -1,11 +1,10 @@
 """
 Configuration for the TaskFlow synthetic data generator.
 
-IMPORTANT: every rate and effect size below is a DESIGN CHOICE for this
-simulation, chosen to be realistic and moderate -- NOT a real-world
-benchmark pulled from any actual company or dataset. They exist so the
-statistical methods in later phases (power analysis, A/B testing, CUPED,
-causal inference) have real, recoverable signal to work with.
+Every rate and effect size below is a design choice, chosen to be realistic
+and moderate, not a real-world benchmark. They exist so the later statistical
+methods (power analysis, A/B testing, CUPED, causal inference) have real,
+recoverable signal to work with.
 """
 
 import datetime as dt
@@ -60,16 +59,12 @@ EXP2_SPLIT = 0.5
 EXP3_NAME = "usage_threshold_nudge"
 EXP3_START = dt.date(2025, 5, 1)          # ~month 16
 EXP3_WEEKLY_TASK_THRESHOLD = 15           # tasks/week on Free plan -> nudge shown
-EXP3_TRUE_LIFT = 0.06                     # +6pp GENUINE causal lift from the nudge
-                                           # itself (on top of the pre-existing
-                                           # engagement confound -- see below)
+EXP3_TRUE_LIFT = 0.06                     # genuine causal lift from the nudge, on top of the engagement confound
 
 # --- Latent engagement propensity ---
-# Every account gets a hidden value in [0,1], drawn Beta(2,5) (right-skewed --
-# most accounts low/moderate engagement, a minority highly engaged). Drives
-# activation likelihood, usage intensity, trial conversion, and churn risk.
-# NOT to be used directly in the analysis phases -- a real analyst never
-# observes this. Only its downstream proxies (past usage, tenure) are fair game.
+# Hidden per-account value in [0,1], Beta(2,5) so most accounts are low/moderate
+# and a minority highly engaged. Drives activation, usage, conversion, and churn.
+# A real analyst never observes this directly, only proxies like past usage.
 ENGAGEMENT_BETA_A = 2
 ENGAGEMENT_BETA_B = 5
 

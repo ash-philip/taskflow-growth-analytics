@@ -1,18 +1,12 @@
 """
-Simulates activation (verify email + create first project + invite a
-teammate, all within 7 days) for each account, and assigns/applies
-Experiment 1 (onboarding redesign) for accounts that sign up after its
-start date.
+Simulates activation (verify email + create first project + invite a teammate,
+within 7 days) per account, and assigns Experiment 1 (onboarding redesign) to
+accounts that sign up after its start date.
 
-Design: activation probability per account = base rate, shifted up/down by
-engagement_propensity (via a logistic link so it stays a valid probability),
-plus a flat lift for Experiment 1 treatment accounts. We don't simulate the
-three sub-events (verify/first-project/invite) separately with their own
-probabilities -- we model the combined "did they activate" outcome directly.
-That's a deliberate simplification: it keeps the *target* activation rate
-exact and checkable against the config, which matters because Phase 4 will
-ask you to recover EXP1_LIFT from noisy data -- we want to know precisely
-what "ground truth" we're checking your estimate against.
+Activation is modeled as a single combined outcome rather than three separate
+sub-events. This is deliberate: it keeps the target activation rate exact and
+checkable against the config, so the known EXP1_LIFT can serve as ground truth
+for the later analysis.
 """
 
 import numpy as np
@@ -63,7 +57,7 @@ def simulate_activation(accounts: pd.DataFrame) -> pd.DataFrame:
     )
 
     p_activate = logistic(base_logit + propensity_effect + exp1_effect)
-    df["p_activate_true"] = p_activate.round(4)  # kept for validation only, drop before "official" release
+    df["p_activate_true"] = p_activate.round(4)  # ground-truth probability, held out in ground_truth.csv
     df["activated"] = rng.binomial(1, p_activate).astype(bool)
 
     # Activation timestamp: activated accounts activate somewhere in days 1-7
