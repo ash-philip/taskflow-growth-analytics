@@ -4,7 +4,7 @@ A growth analytics case study on a simulated B2B SaaS company. It covers the ful
 path a real growth team works through: funnel and retention analysis, A/B testing,
 causal inference, churn modeling, and customer lifetime estimation.
 
-**Live app:** [PASTE STREAMLIT URL HERE]
+**Live app:** https://taskflow-growth-analytics.streamlit.app
 
 ## What this is
 
