@@ -1,61 +1,89 @@
 # TaskFlow Growth Analytics
 
-**Status: Phase 1 (synthetic data generation) — in progress**
+A growth analytics case study on a simulated B2B SaaS company. It covers the full
+path a real growth team works through: funnel and retention analysis, A/B testing,
+causal inference, churn modeling, and customer lifetime estimation.
 
-An end-to-end growth analytics case study built on a simulated B2B
-project-management SaaS (TaskFlow). Goes beyond descriptive analytics
-(funnels, cohorts) into the tools growth data teams actually use to make
-decisions: rigorous A/B testing, causal inference for changes that couldn't
-be randomized, and churn/LTV modeling.
+**Live app:** [PASTE STREAMLIT URL HERE]
 
-See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full spec, experiment
-designs, and phase-by-phase roadmap.
+## What this is
 
-## Why this project
+TaskFlow is a fictional project-management product. I generated two years of
+realistic customer data for it, then analyzed that data end to end. Because I
+built the data, I know the true answer behind every number, so the project can
+show whether standard analysis methods actually recover the truth or get fooled
+by it. That is the real focus here: not just running the analysis, but knowing
+when to trust the result.
 
-Most portfolio analytics projects stop at descriptive work — cohorts, RFM,
-dashboards. This one is built to also answer: *if we make a change, how do we
-know it worked, and when can we trust that answer?* One of the three
-experiments in this project is deliberately **not randomized**, forcing the
-use of causal inference (diff-in-differences / propensity matching) instead
-of a naive before/after comparison — the kind of judgment call that separates
-"ran a t-test" from "knew when a t-test was the wrong tool."
+The project deliberately includes the situations most tutorials skip: experiments
+that are underpowered, and a result that looks impressive but is caused by
+confounding rather than the change being tested.
+
+## Key findings
+
+**Activation is the bottleneck.** Only about a third of signups become active
+users, but around 79% of active users go on to pay. The problem is getting people
+started, not getting them to pay.
+
+**Two of three experiments were inconclusive, and saying so is the point.** A
+naive read would pick a winner from noisy data. Proper power analysis showed one
+onboarding test needed roughly 2,200 accounts per arm to detect the expected
+effect, but only about 750 were available. The honest conclusion is "not enough
+data yet," which is different from "the change failed."
+
+**A pop-up nudge looked like a 9x win but did almost nothing.** Users who saw an
+upgrade nudge were far more likely to upgrade, but the nudge only reached heavy
+users who were already likely to upgrade. Comparing heavy users who saw the nudge
+against equally heavy users who did not, the effect fell from +52 percentage
+points to roughly zero, confirmed three separate ways. Correlation was not
+causation.
+
+**Median customer lifetime is about 18 months,** estimated with survival analysis
+so that customers who have not yet churned are handled correctly.
 
 ## Stack
 
-Python (data generation, analysis) → BigQuery (warehouse) → dbt (transformation,
-testing, docs) → statsmodels/scipy/lifelines (experimentation, survival
-analysis) → Streamlit (deployed interactive app)
+- **Data generation:** Python (numpy, pandas)
+- **Warehouse:** Google BigQuery
+- **Transformation:** dbt (staging, intermediate, and marts models, with tests)
+- **Analysis:** pandas, statsmodels, scipy, scikit-learn, lifelines
+- **App:** Streamlit, deployed on Streamlit Community Cloud
 
-## Repository Structure
+## How it works
 
 ```
-taskflow-growth-analytics/
-├── PROJECT_PLAN.md        # full spec, experiment designs, roadmap
-├── data/
-│   ├── raw/                # generated synthetic source data
-│   └── processed/          # cleaned / modeled outputs
-├── src/
-│   └── data_generation/    # synthetic data generation scripts
-├── dbt/                    # dbt project (staging -> intermediate -> marts)
-├── notebooks/              # exploratory + phase-by-phase analysis notebooks
-├── experiments/            # A/B test and causal inference analysis
-├── app/                    # Streamlit app
-└── docs/                   # diagrams, writeups
+src/data_generation/   Python scripts that generate the synthetic data
+dbt/                   dbt models: staging -> intermediate -> marts, plus tests
+notebooks/             statistical analysis (experiments, churn, survival)
+app/                   Streamlit app that reads snapshot CSVs of the final marts
 ```
 
-## Roadmap
+Data flows one direction: the Python scripts generate raw CSVs, dbt loads and
+transforms them in BigQuery into clean marts, the notebook runs the statistical
+analysis, and the Streamlit app presents the results.
 
-1. Synthetic data generation
-2. dbt models on BigQuery
-3. Growth metrics layer (AARRR, retention)
-4. Statistics fundamentals + A/B testing (frequentist + Bayesian, CUPED)
-5. Causal inference (diff-in-diff / propensity matching)
-6. Churn prediction + LTV (survival analysis)
-7. Streamlit app
-8. Case study writeup
+## Running it locally
 
-## Data Note
+```bash
+# 1. set up the environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-All data in this repository is synthetic, generated for portfolio purposes.
-No real company or user data is included.
+# 2. generate the synthetic data
+python3 src/data_generation/run_all.py
+
+# 3. load into BigQuery and build the dbt models
+#    (requires a BigQuery project and `gcloud auth application-default login`)
+./scripts/load_raw_data_to_bigquery.sh
+cd dbt && dbt build
+
+# 4. run the app
+streamlit run app/streamlit_app.py
+```
+
+All data is synthetic. No real company or customer data is used.
+
+## Author
+
+Ashwin Philip · [GitHub](https://github.com/ash-philip) · [LinkedIn](https://www.linkedin.com/in/ashwinabrahamphilip)
